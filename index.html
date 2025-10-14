@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor NFC - Frequência</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            background-color: #f5f5f5;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .serial-display {
+            background-color: #fff;
+            border: 2px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 18px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Leitor NFC - Frequência</h1>
+    
+    <div class="container">
+        <p>Clique no botão abaixo para iniciar a leitura do cartão NFC:</p>
+        
+        <button id="startButton" onclick="startNFCReading()">Iniciar Leitura NFC</button>
+        
+        <div id="serialDisplay" class="serial-display">
+            Aguardando leitura...
+        </div>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function startNFCReading() {
+            const button = document.getElementById('startButton');
+            const display = document.getElementById('serialDisplay');
+            const status = document.getElementById('status');
+            
+            // Verificar se NFC é suportado
+            if (!('NDEFReader' in window)) {
+                display.textContent = 'NFC não é suportado neste dispositivo/navegador';
+                display.className = 'serial-display error';
+                return;
+            }
+
+            try {
+                button.disabled = true;
+                button.textContent = 'Aproxime o cartão NFC...';
+                display.textContent = 'Aguardando cartão NFC...';
+                display.className = 'serial-display';
+                
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                
+                status.innerHTML = '<p style="color: green;">Leitor NFC ativo. Aproxime um cartão.</p>';
+                
+                ndef.addEventListener("reading", ({ message, serialNumber }) => {
+                    display.textContent = `Serial: ${serialNumber}`;
+                    display.className = 'serial-display success';
+                    
+                    // Log adicional no console
+                    console.log('Serial Number:', serialNumber);
+                    console.log('Message:', message);
+                });
+                
+                ndef.addEventListener("readingerror", () => {
+                    display.textContent = 'Erro ao ler o cartão NFC';
+                    display.className = 'serial-display error';
+                    button.disabled = false;
+                    button.textContent = 'Tentar Novamente';
+                });
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                display.textContent = `Erro: ${error.message}`;
+                display.className = 'serial-display error';
+                button.disabled = false;
+                button.textContent = 'Tentar Novamente';
+                
+                if (error.name === 'NotAllowedError') {
+                    status.innerHTML = '<p style="color: red;">Permissão negada. Verifique as configurações do navegador.</p>';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
